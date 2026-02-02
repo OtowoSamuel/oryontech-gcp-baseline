@@ -1,0 +1,23 @@
+# Checkov configuration for security scanning
+framework:
+  - terraform
+  - secrets
+
+# Skip specific checks if needed (documented reasons)
+skip-check:
+  # Add specific checks to skip with justification
+  # Example: CKV_GCP_123
+
+# Enable compact output
+compact: true
+
+# Enable quiet mode (errors and failures only)
+quiet: false
+
+# Output format
+output: cli
+
+# Fail on severity
+hard-fail-on:
+  - CRITICAL
+  - HIGH

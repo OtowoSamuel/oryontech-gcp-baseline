@@ -1,0 +1,38 @@
+# Example terraform.tfvars configuration
+# Copy this file to terraform.tfvars and update with your values
+
+# REQUIRED: Your GCP Project ID
+project_id = "your-gcp-project-id"
+
+# Region for GCP resources
+region = "us-central1"
+
+# Environment name
+environment = "staging"
+
+# REQUIRED: OpenAI API Key (or set via TF_VAR_openai_api_key environment variable)
+# openai_api_key = "sk-mock-key-for-testing"
+
+# VPC Configuration
+vpc_connector_cidr          = "10.8.0.0/28"
+vpc_connector_machine_type  = "e2-micro"
+vpc_connector_min_instances = 2
+vpc_connector_max_instances = 3
+
+# Database Configuration
+database_version               = "POSTGRES_15"
+database_tier                  = "db-f1-micro"
+database_availability_type     = "ZONAL"
+database_disk_size             = 10
+database_backup_retention_days = 7
+database_name                  = "oryontech_db"
+database_user                  = "oryontech_user"
+deletion_protection            = false  # Set to true for production
+
+# Cloud Run Configuration
+cloud_run_image         = "us-docker.pkg.dev/cloudrun/container/hello"
+cloud_run_cpu           = "1"
+cloud_run_memory        = "512Mi"
+cloud_run_min_instances = 0
+cloud_run_max_instances = 10
+allow_public_access     = true
