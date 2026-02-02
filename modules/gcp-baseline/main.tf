@@ -1,13 +1,5 @@
-/**
- * GCP Baseline Infrastructure Module
- * 
- * This module provisions a secure baseline infrastructure for OryonTech's
- * Agent-as-a-Service platform on GCP, including:
- * - Cloud Run service with least-privilege IAM
- * - Cloud SQL PostgreSQL with private networking (no public IP)
- * - Secret Manager for secure credential storage
- * - VPC Connector for private Cloud SQL connectivity
- */
+# GCP Baseline Infrastructure Module
+# Provisions Cloud Run, Cloud SQL (private), VPC networking, and Secret Manager
 
 terraform {
   required_version = ">= 1.5.0"

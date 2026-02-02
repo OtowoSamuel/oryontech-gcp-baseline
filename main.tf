@@ -1,8 +1,4 @@
-/**
- * Root Terraform Configuration for OryonTech GCP Baseline
- * 
- * This is the main entry point for deploying the staging environment.
- */
+# Root configuration for GCP baseline infrastructure
 
 terraform {
   required_version = ">= 1.5.0"
