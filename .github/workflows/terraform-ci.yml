@@ -154,7 +154,24 @@ jobs:
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
         run: |
           terraform init
-          infracost breakdown --path . --format json --out-file /tmp/infracost.json
+          infracost diff --path . --format json --out-file /tmp/infracost.json --compare-to /tmp/infracost-base.json || true
+
+      - name: Generate Infracost baseline
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          git checkout main
+          terraform init
+          infracost breakdown --path . --format json --out-file /tmp/infracost-base.json
+          git checkout -
+
+      - name: Generate Infracost diff
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          infracost diff --path . --format json --out-file /tmp/infracost.json --compare-to /tmp/infracost-base.json
 
       - name: Display Cost Breakdown (PR to main)
         run: |
