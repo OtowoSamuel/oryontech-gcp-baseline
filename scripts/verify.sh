@@ -52,15 +52,19 @@ if gcloud sql instances describe "$(echo "$DB_CONNECTION_NAME" | cut -d: -f3)" \
     echo -e "${GREEN}✓${NC} Cloud SQL instance is running"
     echo "   Connection: $DB_CONNECTION_NAME"
     
-    # Check for private IP only
-    PUBLIC_IP=$(gcloud sql instances describe "$(echo "$DB_CONNECTION_NAME" | cut -d: -f3)" \
+    # Check for private IP only (verify ipv4Enabled is false)
+    IPV4_ENABLED=$(gcloud sql instances describe "$(echo "$DB_CONNECTION_NAME" | cut -d: -f3)" \
         --project="$(echo "$DB_CONNECTION_NAME" | cut -d: -f1)" \
-        --format="value(ipAddresses[0].ipAddress)" 2>/dev/null || echo "")
+        --format="value(settings.ipConfiguration.ipv4Enabled)" 2>/dev/null || echo "")
     
-    if [ -z "$PUBLIC_IP" ]; then
-        echo -e "${GREEN}✓${NC} Database has no public IP (private only)"
+    PRIVATE_IP=$(gcloud sql instances describe "$(echo "$DB_CONNECTION_NAME" | cut -d: -f3)" \
+        --project="$(echo "$DB_CONNECTION_NAME" | cut -d: -f1)" \
+        --format="value(ipAddresses.filter(type:PRIVATE).ipAddress)" 2>/dev/null || echo "")
+    
+    if [ "$IPV4_ENABLED" = "False" ] || [ "$IPV4_ENABLED" = "false" ]; then
+        echo -e "${GREEN}✓${NC} Database has no public IP (private only: $PRIVATE_IP)"
     else
-        echo -e "${YELLOW}⚠${NC} Database has a public IP: $PUBLIC_IP"
+        echo -e "${YELLOW}⚠${NC} Database has a public IP enabled"
     fi
 else
     echo -e "${RED}✗${NC} Cloud SQL instance is not running"
