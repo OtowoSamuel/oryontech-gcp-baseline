@@ -2,9 +2,17 @@ name: Terraform CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/terraform-ci.yml'
   pull_request:
     branches: [main]
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/terraform-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -150,10 +158,10 @@ jobs:
 
       - name: Display Cost Breakdown (PR to main)
         run: |
-          echo "=== 📊 Monthly Cost Estimate for PR ==="
+          echo "=== Monthly Cost Estimate for PR ==="
           infracost output --path /tmp/infracost.json --format table
           echo ""
-          echo "=== 💰 Total Monthly Cost ==="
+          echo "=== Total Monthly Cost ==="
           infracost output --path /tmp/infracost.json --format json | jq -r '.totalMonthlyCost'
 
       - name: Post Infracost Comment to PR
