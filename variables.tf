@@ -56,7 +56,7 @@ variable "database_version" {
 variable "database_tier" {
   description = "Cloud SQL instance tier"
   type        = string
-  default     = "db-f1-micro"
+  default     = "db-g1-small"
 }
 
 variable "database_availability_type" {
