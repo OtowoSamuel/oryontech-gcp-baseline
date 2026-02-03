@@ -37,13 +37,13 @@ variable "vpc_connector_machine_type" {
 variable "vpc_connector_min_instances" {
   description = "Minimum number of VPC connector instances"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "vpc_connector_max_instances" {
   description = "Maximum number of VPC connector instances"
   type        = number
-  default     = 3
+  default     = 5
 }
 
 # Cloud SQL Configuration
@@ -56,7 +56,7 @@ variable "database_version" {
 variable "database_tier" {
   description = "Cloud SQL instance tier"
   type        = string
-  default     = "db-f1-micro"
+  default     = "db-g1-small"
 }
 
 variable "database_availability_type" {
