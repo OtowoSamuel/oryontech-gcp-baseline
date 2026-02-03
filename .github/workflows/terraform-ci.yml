@@ -114,7 +114,7 @@ jobs:
               body: output
             });
 
-  # Optional: Infracost
+  # Cost Estimation with Infracost
   infracost:
     name: Cost Estimation
     runs-on: ubuntu-latest
@@ -134,20 +134,28 @@ jobs:
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
       - name: Generate Infracost JSON
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          terraform init -backend=false
-          infracost breakdown --path . --format json --out-file /tmp/infracost.json || true
+          terraform init
+          infracost breakdown --path . --format json --out-file /tmp/infracost.json
 
-      - name: Display Infracost costs
+      - name: Display Cost Breakdown (All Branches)
         run: |
-          echo "=== Monthly Cost Estimate ==="
-          infracost output --path /tmp/infracost.json --format table || echo "Cost breakdown unavailable"
+          echo "=== 📊 Monthly Cost Estimate ==="
+          infracost output --path /tmp/infracost.json --format table
+          echo ""
+          echo "=== 💰 Total Monthly Cost ==="
+          infracost output --path /tmp/infracost.json --format json | jq -r '.totalMonthlyCost'
 
-      - name: Post Infracost comment
+      - name: Post Infracost Comment (PRs Only)
         if: github.event_name == 'pull_request'
         run: |
           infracost comment github \
@@ -155,7 +163,7 @@ jobs:
             --repo $GITHUB_REPOSITORY \
             --github-token ${{ github.token }} \
             --pull-request ${{ github.event.pull_request.number }} \
-            --behavior update || echo "Infracost comment skipped"
+            --behavior update
 
   security:
     name: Security Scanning
@@ -182,8 +190,8 @@ jobs:
   build-docker:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    needs: [validate, security]
-    if: github.ref == 'refs/heads/main'
+    needs: [validate, plan, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
       - name: Checkout code
@@ -202,12 +210,15 @@ jobs:
           gcloud auth configure-docker us-central1-docker.pkg.dev
 
       - name: Build Docker image
+        working-directory: examples/sample-app
         run: |
-          cd examples/sample-app
-          docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:${{ github.sha }} .
-          docker tag us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:${{ github.sha }} us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:latest
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:${{ github.sha }} \
+            -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:latest \
+            .
 
-      - name: Push Docker image to Artifact Registry
+      - name: Push Docker images to Artifact Registry
         run: |
           docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:${{ github.sha }}
           docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:latest
@@ -217,5 +228,9 @@ jobs:
           gcloud run deploy staging-app \
             --image=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/oryontech-app/sample-app:latest \
             --region=us-central1 \
-            --project=${{ secrets.GCP_PROJECT_ID }} \
-            --allow-unauthenticated
+            --project=${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Get Cloud Run URL
+        run: |
+          URL=$(gcloud run services describe staging-app --region=us-central1 --format='value(status.url)')
+          echo "🚀 Application deployed at: $URL"
