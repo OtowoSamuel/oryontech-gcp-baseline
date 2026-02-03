@@ -35,12 +35,37 @@ resource "google_project_service" "required_apis" {
     "vpcaccess.googleapis.com",
     "secretmanager.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "artifactregistry.googleapis.com",
   ])
 
   project = var.project_id
   service = each.key
 
   disable_on_destroy = false
+}
+
+# Artifact Registry for Docker images
+resource "google_artifact_registry_repository" "docker_repo" {
+  location      = var.region
+  repository_id = "oryontech-app"
+  project       = var.project_id
+  description   = "Docker image repository for OryonTech application"
+  format        = "DOCKER"
+
+  docker_config {
+    immutable_tags = false
+  }
+
+  depends_on = [google_project_service.required_apis]
+}
+
+# IAM - Allow GitHub Actions service account to push Docker images
+resource "google_artifact_registry_repository_iam_member" "github_actions_writer" {
+  repository = google_artifact_registry_repository.docker_repo.name
+  location   = google_artifact_registry_repository.docker_repo.location
+  project    = var.project_id
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${var.github_actions_sa_email}"
 }
 
 # VPC Network for private Cloud SQL connectivity

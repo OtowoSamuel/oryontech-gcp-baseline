@@ -191,3 +191,10 @@ variable "allow_public_access" {
   type        = bool
   default     = false
 }
+
+variable "github_actions_sa_email" {
+  description = "Email of the GitHub Actions service account for Artifact Registry access"
+  type        = string
+  default     = ""
+}
+

@@ -68,4 +68,7 @@ module "gcp_baseline" {
   cloud_run_min_instances = var.cloud_run_min_instances
   cloud_run_max_instances = var.cloud_run_max_instances
   allow_public_access     = var.allow_public_access
+
+  # GitHub Actions Configuration
+  github_actions_sa_email = var.github_actions_sa_email
 }
