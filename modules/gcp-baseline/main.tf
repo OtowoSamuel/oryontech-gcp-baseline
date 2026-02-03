@@ -59,8 +59,9 @@ resource "google_artifact_registry_repository" "docker_repo" {
   depends_on = [google_project_service.required_apis]
 }
 
-# IAM - Allow GitHub Actions service account to push Docker images
+# IAM - Allow GitHub Actions service account to push Docker images (only if email is provided)
 resource "google_artifact_registry_repository_iam_member" "github_actions_writer" {
+  count      = var.github_actions_sa_email != "" ? 1 : 0
   repository = google_artifact_registry_repository.docker_repo.name
   location   = google_artifact_registry_repository.docker_repo.location
   project    = var.project_id
