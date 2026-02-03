@@ -68,7 +68,7 @@ This infrastructure provisions:
 - **TFLint** (optional) - [Install](https://github.com/terraform-linters/tflint)
 - **Checkov** (optional) - `pip install checkov`
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Authenticate with GCP
 
@@ -179,7 +179,7 @@ The GitHub Actions pipeline automatically runs on Terraform file changes (`*.tf`
 - `OPENAI_API_KEY` - OpenAI API key (or mock for demo)
 - `INFRACOST_API_KEY` - Infracost API key (optional, for cost estimates)
 
-## 📊 Cost Estimation
+## Cost Estimation
 
 Infracost automatically analyzes infrastructure cost changes on PRs:
 - Runs when Terraform files are modified
@@ -189,7 +189,7 @@ Infracost automatically analyzes infrastructure cost changes on PRs:
 
 Get your free Infracost API key at: https://www.infracost.io/
 
-## �📁 Repository Structure
+## Repository Structure
 
 ```
 .
@@ -221,7 +221,7 @@ Get your free Infracost API key at: https://www.infracost.io/
 └── README.md                     # This file
 ```
 
-## 🛡️ Security & Validation
+## Security & Validation
 
 ### Automated Security Checks
 
@@ -246,7 +246,7 @@ Get your free Infracost API key at: https://www.infracost.io/
 - VPC egress: **PRIVATE_RANGES_ONLY** (Cloud Run can't access internet directly)
 - Secrets: All credentials stored in Secret Manager (not env vars)
 
-## ✅ Validation Gates
+## Validation Gates
 
 This project implements automated validation checks in CI/CD:
 
@@ -269,7 +269,7 @@ tflint --init && tflint --recursive
 checkov -d . --config-file .checkov.yml
 ```
 
-## 🐳 Docker Build & Deployment
+## Docker Build & Deployment
 
 ### Automated Deployment (CI/CD)
 
@@ -331,7 +331,7 @@ terraform destroy
 - Secret Manager secrets
 - Service accounts
 
-## 💰 Cost Optimization
+## Cost Optimization
 
 ### Estimated Monthly Costs (Staging)
 
@@ -352,7 +352,7 @@ cloud_run_min_instances    = 1           # Always warm
 deletion_protection        = true        # Prevent accidental deletion
 ```
 
-## 🔧 Advanced Configuration
+## Advanced Configuration
 
 ### Using Remote State
 
@@ -421,7 +421,7 @@ curl https://staging-app-HASH.run.app/health
 curl https://staging-app-HASH.run.app/health/db
 ```
 
-## 🔗 Additional Resources
+## Additional Resources
 
 - [Cloud Run Documentation](https://cloud.google.com/run/docs)
 - [Cloud SQL Best Practices](https://cloud.google.com/sql/docs/postgres/best-practices)
@@ -432,26 +432,26 @@ curl https://staging-app-HASH.run.app/health/db
 - [GitHub Actions](https://docs.github.com/en/actions)
 - [Infracost](https://www.infracost.io/docs/)
 
-## 📝 Features Checklist
+## Features Checklist
 
-- ✅ Cloud Run with auto-scaling and health checks
-- ✅ Private Cloud SQL (PostgreSQL) with VPC peering
-- ✅ Serverless VPC Access Connector
-- ✅ Secret Manager integration
-- ✅ Least privilege IAM (separate service accounts)
-- ✅ Artifact Registry for Docker images
-- ✅ GitHub Actions CI/CD pipeline
-- ✅ Terraform validation (fmt, validate, tflint)
-- ✅ Security scanning (Checkov, Trivy)
-- ✅ Cost estimation (Infracost)
-- ✅ Automated Docker build/push/deploy
-- ✅ Infrastructure as Code best practices
-- ✅ Automated testing and verification
-- ✅ Documentation and examples
+- Cloud Run with auto-scaling and health checks
+- Private Cloud SQL (PostgreSQL) with VPC peering
+- Serverless VPC Access Connector
+- Secret Manager integration
+- Least privilege IAM (separate service accounts)
+- Artifact Registry for Docker images
+- GitHub Actions CI/CD pipeline
+- Terraform validation (fmt, validate, tflint)
+- Security scanning (Checkov, Trivy)
+- Cost estimation (Infracost)
+- Automated Docker build/push/deploy
+- Infrastructure as Code best practices
+- Automated testing and verification
+- Documentation and examples
 
 ---
 
-**Built with** ❤️ **for OryonTech DevOps Technical Challenge**
+**Built for OryonTech DevOps Technical Challenge**
 
 ### Common Issues
 
@@ -485,7 +485,7 @@ No cost data available
 ```
 Solution: Verify `INFRACOST_API_KEY` secret is set and valid
 
-## 🗑️ How to Destroy
+## How to Destroy
 
 **Using the cleanup script (recommended):**
 ```bash
