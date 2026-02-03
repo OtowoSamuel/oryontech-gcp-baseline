@@ -68,7 +68,7 @@ variable "database_availability_type" {
 variable "database_disk_size" {
   description = "Initial disk size in GB for Cloud SQL instance"
   type        = number
-  default     = 10
+  default     = 20
 }
 
 variable "database_backup_retention_days" {
