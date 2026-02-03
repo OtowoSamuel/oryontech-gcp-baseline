@@ -41,11 +41,11 @@ output "vpc_connector_name" {
 output "secret_manager_secrets" {
   description = "Map of Secret Manager secret IDs"
   value = {
-    openai_api_key        = google_secret_manager_secret.openai_api_key.secret_id
-    db_connection_name    = google_secret_manager_secret.db_connection_name.secret_id
-    db_user              = google_secret_manager_secret.db_user.secret_id
-    db_password          = google_secret_manager_secret.db_password.secret_id
-    db_name              = google_secret_manager_secret.db_name.secret_id
+    openai_api_key     = google_secret_manager_secret.openai_api_key.secret_id
+    db_connection_name = google_secret_manager_secret.db_connection_name.secret_id
+    db_user            = google_secret_manager_secret.db_user.secret_id
+    db_password        = google_secret_manager_secret.db_password.secret_id
+    db_name            = google_secret_manager_secret.db_name.secret_id
   }
 }
 

@@ -52,14 +52,14 @@ module "gcp_baseline" {
   vpc_connector_max_instances = var.vpc_connector_max_instances
 
   # Database Configuration
-  database_version              = var.database_version
-  database_tier                 = var.database_tier
-  database_availability_type    = var.database_availability_type
-  database_disk_size            = var.database_disk_size
+  database_version               = var.database_version
+  database_tier                  = var.database_tier
+  database_availability_type     = var.database_availability_type
+  database_disk_size             = var.database_disk_size
   database_backup_retention_days = var.database_backup_retention_days
-  database_name                 = var.database_name
-  database_user                 = var.database_user
-  deletion_protection           = var.deletion_protection
+  database_name                  = var.database_name
+  database_user                  = var.database_user
+  deletion_protection            = var.deletion_protection
 
   # Cloud Run Configuration
   cloud_run_image         = var.cloud_run_image

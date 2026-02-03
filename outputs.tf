@@ -63,11 +63,11 @@ output "environment" {
 output "deployment_summary" {
   description = "Summary of deployed infrastructure"
   value = {
-    cloud_run_url         = module.gcp_baseline.cloud_run_url
-    database_connection   = module.gcp_baseline.database_connection_name
-    vpc_connector         = module.gcp_baseline.vpc_connector_name
-    service_account       = module.gcp_baseline.cloud_run_service_account
-    environment           = module.gcp_baseline.environment
-    region                = module.gcp_baseline.region
+    cloud_run_url       = module.gcp_baseline.cloud_run_url
+    database_connection = module.gcp_baseline.database_connection_name
+    vpc_connector       = module.gcp_baseline.vpc_connector_name
+    service_account     = module.gcp_baseline.cloud_run_service_account
+    environment         = module.gcp_baseline.environment
+    region              = module.gcp_baseline.region
   }
 }
