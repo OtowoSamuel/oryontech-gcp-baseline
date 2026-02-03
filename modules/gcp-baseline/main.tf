@@ -69,6 +69,14 @@ resource "google_artifact_registry_repository_iam_member" "github_actions_writer
   member     = "serviceAccount:${var.github_actions_sa_email}"
 }
 
+# IAM - Allow GitHub Actions service account to act as Cloud Run service account for deployments
+resource "google_service_account_iam_member" "github_actions_act_as_cloud_run" {
+  count              = var.github_actions_sa_email != "" ? 1 : 0
+  service_account_id = google_service_account.cloud_run_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${var.github_actions_sa_email}"
+}
+
 # VPC Network for private Cloud SQL connectivity
 resource "google_compute_network" "vpc" {
   name                    = "${var.environment}-vpc"
