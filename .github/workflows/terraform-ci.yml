@@ -148,30 +148,34 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Generate Infracost JSON
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-          TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          terraform init
-          infracost diff --path . --format json --out-file /tmp/infracost.json --compare-to /tmp/infracost-base.json || true
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ github.event.pull_request.base.ref }}'
 
-      - name: Generate Infracost baseline
+      - name: Generate Infracost cost estimate baseline
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          git checkout main
           terraform init
-          infracost breakdown --path . --format json --out-file /tmp/infracost-base.json
-          git checkout -
+          infracost breakdown --path=. \
+                              --format=json \
+                              --out-file=/tmp/infracost-base.json
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
 
       - name: Generate Infracost diff
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          infracost diff --path . --format json --out-file /tmp/infracost.json --compare-to /tmp/infracost-base.json
+          terraform init
+          infracost diff --path=. \
+                          --format=json \
+                          --compare-to=/tmp/infracost-base.json \
+                          --out-file=/tmp/infracost.json
 
       - name: Display Cost Breakdown (PR to main)
         run: |
