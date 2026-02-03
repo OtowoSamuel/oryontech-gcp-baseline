@@ -1,93 +1,111 @@
 # OryonTech GCP Baseline Infrastructure
 
-A reusable Terraform module for deploying secure baseline infrastructure on GCP. This module provisions Cloud Run, Cloud SQL PostgreSQL with private networking, Secret Manager integration, and proper IAM configuration.
+A production-ready Terraform module for deploying secure baseline infrastructure on GCP with complete CI/CD pipeline. Features Cloud Run, private Cloud SQL PostgreSQL, Artifact Registry, automated deployments, security scanning, and cost estimation.
 
 ## Overview
 
-This module creates:
-- Cloud Run service with auto-scaling
-- Cloud SQL PostgreSQL (private IP only, no public access)
-- VPC and Serverless VPC Access Connector for private connectivity
-- Secret Manager for credential storage
-- Service account with least privilege IAM permissions
-- Validation tooling (terraform fmt, validate, tflint, checkov)
+This infrastructure provisions:
+- **Cloud Run** service with auto-scaling and health checks
+- **Cloud SQL PostgreSQL** (private IP only, no public access)
+- **Artifact Registry** for Docker image storage
+- **VPC** and Serverless VPC Access Connector for private connectivity
+- **Secret Manager** for secure credential storage
+- **Service accounts** with least privilege IAM permissions
+- **CI/CD Pipeline** with GitHub Actions (validation, security, cost estimation, Docker build/deploy)
+- **Security scanning** with Trivy and Checkov
+- **Cost estimation** with Infracost on infrastructure changes
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Internet                              │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           │ HTTPS
-                           ▼
-                  ┌─────────────────┐
-                  │   Cloud Run     │◄─── Secrets from
-                  │   (Container)   │     Secret Manager
-                  └────────┬────────┘
-                           │
-                           │ VPC Connector
-                           │ (Private Egress)
-                           ▼
-                      ┌─────────┐
-                      │   VPC   │
-                      │ Network │
-                      └────┬────┘
-                           │
-                           │ Private IP Only
-                           │ (No Public Access)
-                           ▼
-                  ┌─────────────────┐
-                  │  Cloud SQL      │
-                  │  PostgreSQL     │
-                  │  (Private IP)   │
-                  └─────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                        Internet / GitHub                            │
+└────────────────────────┬───────────────────────────┬────────────────┘
+                         │                           │
+                    HTTPS│                           │ CI/CD Pipeline
+                         ▼                           ▼
+                ┌─────────────────┐         ┌──────────────────┐
+                │   Cloud Run     │◄────────│ Artifact Registry│
+                │   (Container)   │  Deploy │ (Docker Images)  │
+                └────────┬────────┘         └──────────────────┘
+                         │
+                         │ Secrets from Secret Manager:
+                         │ - OPENAI_API_KEY
+                         │ - DB_CONNECTION_NAME
+                         │ - DB_USER / DB_PASSWORD / DB_NAME
+                         │
+                         │ VPC Connector
+                         │ (Private Egress)
+                         ▼
+                    ┌─────────┐
+                    │   VPC   │
+                    │ Network │
+                    └────┬────┘
+                         │
+                         │ Private IP Only
+                         │ (No Public Access)
+                         ▼
+                ┌─────────────────┐
+                │  Cloud SQL      │
+                │  PostgreSQL     │
+                │  (Private IP)   │
+                └─────────────────┘
 ```
 
-Cloud Run connects to Cloud SQL through a Serverless VPC Access Connector over private networking. The database has no public IP address. All secrets are stored in Secret Manager and injected into Cloud Run at runtime.
+**Key Security Features:**
+- Cloud Run connects to Cloud SQL via VPC Connector (private networking only)
+- Database has NO public IP address
+- All secrets stored in Secret Manager
+- Service account with least privilege permissions
+- Docker images scanned for vulnerabilities before deployment
 
 ## Prerequisites
 
 - **GCP Account** with billing enabled
 - **gcloud CLI** - [Install](https://cloud.google.com/sdk/docs/install)
 - **Terraform** >= 1.5.0 - [Install](https://www.terraform.io/downloads)
+- **GitHub Account** (for CI/CD pipeline)
 - **TFLint** (optional) - [Install](https://github.com/terraform-linters/tflint)
 - **Checkov** (optional) - `pip install checkov`
 
+## 🚀 Quick Start
+
 ### 1. Authenticate with GCP
-
-```bash
-# GCP Account with billing enabled
-- [gcloud CLI](https://cloud.google.com/sdk/docs/install) installed
-- [Terraform](https://www.terraform.io/downloads) >= 1.5.0
-- TFLint (optional for validation)
-- Checkov (optional for security scanning):YOUR_PROJECT_ID
-```
- How to Deploy
-
-**1. Authenticate with GCP:**
 
 ```bash
 gcloud auth application-default login
 gcloud config set project YOUR_PROJECT_ID
 ```
 
-**2. Configure Variables:**
-Required variables:
-```hcl
-project_id     = "your-gcp-project-id"
+### 2. Enable Required APIs
+
+```bash
+gcloud services enable compute.googleapis.com \
+  servicenetworking.googleapis.com \
+  sqladmin.googleapis.com \
+  run.googleapis.com \
+  vpcaccess.googleapis.com \
+  secretmanager.googleapis.com \
+  cloudresourcemanager.googleapis.com \
+  artifactregistry.googleapis.com
+```
+
+### 3. Configure Variables
+
+```bash
 cp terraform.tfvars.example terraform.tfvars
 nano terraform.tfvars
 ```
 
 Set required variables:
 ```hcl
-project_id     = "your-gcp-project-id"
-environment    = "staging"
-openai_api_key = "sk-your-key"  # or use TF_VAR_openai_api_key env variable
+project_id                = "your-gcp-project-id"
+environment               = "staging"
+openai_api_key            = "sk-your-key"
+github_actions_sa_email   = "github-actions@your-project.iam.gserviceaccount.com"
 ```
 
-**3. Deploy:**
+### 4. Deploy Infrastructure
 
 Using the automated script (recommended):
 ```bash
@@ -101,48 +119,144 @@ terraform plan
 terraform apply
 ```
 
-## How to Verify
+### 5. Set Up CI/CD (GitHub Actions)
 
-## 📁 Repository Structure
+```bash
+# Create GitHub Actions service account
+gcloud iam service-accounts create staging-github-actions \
+  --display-name="GitHub Actions Service Account" \
+  --project=YOUR_PROJECT_ID
+
+# Grant required roles
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:staging-github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/viewer"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:staging-github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:staging-github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/run.developer"
+
+# Create and download key
+gcloud iam service-accounts keys create github-actions-key.json \
+  --iam-account=staging-github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com
+
+# Set GitHub secrets
+gh secret set GCP_SA_KEY < github-actions-key.json
+gh secret set GCP_PROJECT_ID --body "YOUR_PROJECT_ID"
+gh secret set OPENAI_API_KEY --body "sk-your-key"
+gh secret set INFRACOST_API_KEY --body "your-infracost-key"
+
+# Clean up local key file
+rm github-actions-key.json
+```
+
+## � CI/CD Pipeline
+
+The GitHub Actions pipeline automatically runs on Terraform file changes (`*.tf`, `*.tfvars`):
+
+### Pipeline Jobs
+
+1. **Validate** - Terraform fmt, validate, TFLint, Checkov security scan
+2. **Plan** - Terraform plan with PR comments
+3. **Infracost** - Cost estimation (PRs only, shows cost impact)
+4. **Security** - Trivy vulnerability scanning with SARIF reports
+5. **Build & Deploy** - Docker build, push to Artifact Registry, deploy to Cloud Run (main branch only)
+
+### Workflow Triggers
+
+- **Pull Requests** → All jobs run, Infracost shows cost comparison
+- **Push to main** → All jobs + Docker build/deploy (if Terraform files changed)
+- **Manual** → workflow_dispatch for manual runs
+
+### GitHub Secrets Required
+
+- `GCP_SA_KEY` - Service account key (JSON)
+- `GCP_PROJECT_ID` - Your GCP project ID
+- `OPENAI_API_KEY` - OpenAI API key (or mock for demo)
+- `INFRACOST_API_KEY` - Infracost API key (optional, for cost estimates)
+
+## 📊 Cost Estimation
+
+Infracost automatically analyzes infrastructure cost changes on PRs:
+- Runs when Terraform files are modified
+- Shows monthly cost estimate in PR checks
+- Posts detailed comparison comment on PR
+- Helps catch unexpected cost increases before merge
+
+Get your free Infracost API key at: https://www.infracost.io/
+
+## �📁 Repository Structure
 
 ```
 .
 ├── .github/
 │   └── workflows/
-│       └── terraform-ci.yml      # CI/CD pipeline
+│       └── terraform-ci.yml      # CI/CD pipeline (validate, security, cost, deploy)
 ├── modules/
 │   └── gcp-baseline/             # Main Terraform module
-│       ├── main.tf               # Core infrastructure
+│       ├── main.tf               # Core infrastructure resources
 │       ├── variables.tf          # Input variables
 │       ├── outputs.tf            # Output values
 │       └── README.md             # Module documentation
 ├── examples/
-│   └── sample-app/               # Sample application
-│       ├── Dockerfile
-│       ├── app.py                # Flask app with DB connectivity
-│       └── requirements.txt
+│   └── sample-app/               # Sample Flask application
+│       ├── Dockerfile            # Multi-stage Docker build
+│       ├── app.py                # Flask app with DB connectivity test
+│       └── requirements.txt      # Python dependencies
 ├── scripts/
 │   ├── deploy.sh                 # Automated deployment
-│   ├── validate.sh               # Validation checks
+│   ├── validate.sh               # Validation checks (fmt, validate, tflint, checkov)
 │   ├── verify.sh                 # Post-deployment verification
-│   └── destroy.sh                # Safe cleanup
+│   └── destroy.sh                # Safe cleanup with confirmation
 ├── main.tf                       # Root module configuration
 ├── variables.tf                  # Root variables
 ├── outputs.tf                    # Root outputs
 ├── terraform.tfvars.example      # Example configuration
-├── .tflint.hcl                   # TFLint configuration
-├── .checkov.yml                  # Checkov security scanning
+├── .tflint.hcl                   # TFLint configuration with GCP rules
+├── .checkov.yml                  # Checkov security scanning config
 └── README.md                     # This file
-## Validation Gates
+```
 
-This project implements four automated validation checks:
+## 🛡️ Security & Validation
 
-1. **terraform fmt** - Code formatting
+### Automated Security Checks
+
+1. **Checkov** - 200+ policy checks for Terraform
+2. **Trivy** - Container and IaC vulnerability scanning
+3. **TFLint** - Terraform linting with GCP best practices
+
+### IAM & Least Privilege
+
+**Cloud Run Service Account** has only:
+- `roles/cloudsql.client` - Connect to Cloud SQL
+- `roles/secretmanager.secretAccessor` - Access specific secrets (not project-wide)
+
+**GitHub Actions Service Account** has only:
+- `roles/viewer` - Read project resources
+- `roles/artifactregistry.writer` - Push Docker images
+- `roles/run.developer` - Deploy Cloud Run services
+
+### Network Security
+
+- Cloud SQL: **Private IP only** (no public access)
+- VPC egress: **PRIVATE_RANGES_ONLY** (Cloud Run can't access internet directly)
+- Secrets: All credentials stored in Secret Manager (not env vars)
+
+## ✅ Validation Gates
+
+This project implements automated validation checks in CI/CD:
+
+1. **terraform fmt** - Code formatting consistency
 2. **terraform validate** - Configuration validation
 3. **tflint** - Static analysis with GCP rules
 4. **checkov** - Security scanning (200+ checks)
+5. **trivy** - Vulnerability scanning
 
-Run all validations:
+Run all validations locally:
 ```bash
 ./scripts/validate.sh
 ```
@@ -153,6 +267,36 @@ terraform fmt -check -recursive
 terraform validate
 tflint --init && tflint --recursive
 checkov -d . --config-file .checkov.yml
+```
+
+## 🐳 Docker Build & Deployment
+
+### Automated Deployment (CI/CD)
+
+On push to `main` branch (when Terraform files change):
+1. Docker image built from [`examples/sample-app/`](examples/sample-app/)
+2. Pushed to Artifact Registry: `us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app/sample-app`
+3. Deployed to Cloud Run service: `staging-app`
+
+### Manual Docker Build
+
+```bash
+cd examples/sample-app
+
+# Build image
+docker build -t us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app/sample-app:latest .
+
+# Authenticate Docker
+gcloud auth configure-docker us-central1-docker.pkg.dev
+
+# Push to Artifact Registry
+docker push us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app/sample-app:latest
+
+# Deploy to Cloud Run
+gcloud run deploy staging-app \
+  --image=us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app/sample-app:latest \
+  --region=us-central1 \
+  --project=PROJECT_ID
 ```
 
 ## IAM & Security
@@ -187,15 +331,16 @@ terraform destroy
 - Secret Manager secrets
 - Service accounts
 
-## 🎯 Cost Optimization
+## 💰 Cost Optimization
 
-### Estimated Monthly Costs (Free Tier)
+### Estimated Monthly Costs (Staging)
 
-- **Cloud Run**: Free tier covers 2M requests/month
-- **Cloud SQL**: db-f1-micro ~$7-10/month
-- **VPC Connector**: ~$8/month
-- **Secret Manager**: First 6 secrets free
-- **Total**: ~$15-20/month for staging
+- **Cloud Run**: Free tier covers 2M requests/month, then $0.00002400/request
+- **Cloud SQL** (db-f1-micro): ~$7-10/month
+- **VPC Connector** (e2-micro, 2 instances): ~$8/month
+- **Secret Manager**: First 6 secrets free, $0.06/secret/month after
+- **Artifact Registry**: First 0.5GB free, $0.10/GB/month after
+- **Total Estimated**: ~$15-20/month for staging with minimal usage
 
 ### Production Recommendations
 
@@ -237,27 +382,76 @@ terraform apply -var-file=production.tfvars
 ```bash
 # Build your application
 cd examples/sample-app
-docker build -t gcr.io/PROJECT_ID/oryontech-app:v1.0.0 .
+docker build -t us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app/my-app:v1.0.0 .
 
-# Push to registry
-docker push gcr.io/PROJECT_ID/oryontech-app:v1.0.0
+# Authenticate and push
+gcloud auth configure-docker us-central1-docker.pkg.dev
+docker push us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app/my-app:v1.0.0
 
-# Update terraform.tfvars
-cloud_run_image = "gcr.io/PROJECT_ID/oryontech-app:v1.0.0"
-
-# Apply changes
-terraform apply
+# Update Cloud Run image (auto-deployed via CI/CD on main branch)
+# Or manually:
+gcloud run deploy staging-app \
+  --image=us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app/my-app:v1.0.0 \
+  --region=us-central1
 ```
 
-## 📚 Additional Resources
+### Verify Infrastructure
+
+After deployment, verify your infrastructure:
+
+```bash
+# Run verification script
+./scripts/verify.sh
+
+# Or manually check:
+# 1. Cloud Run service
+gcloud run services list --region=us-central1
+
+# 2. Cloud SQL instance (private IP only)
+gcloud sql instances describe staging-postgres-SUFFIX --format="get(ipAddresses)"
+
+# 3. Artifact Registry
+gcloud artifacts repositories list --location=us-central1
+
+# 4. Docker images
+gcloud artifacts docker images list us-central1-docker.pkg.dev/PROJECT_ID/oryontech-app
+
+# 5. Test application endpoint
+curl https://staging-app-HASH.run.app/health
+curl https://staging-app-HASH.run.app/health/db
+```
+
+## 🔗 Additional Resources
 
 - [Cloud Run Documentation](https://cloud.google.com/run/docs)
 - [Cloud SQL Best Practices](https://cloud.google.com/sql/docs/postgres/best-practices)
+- [Artifact Registry](https://cloud.google.com/artifact-registry/docs)
 - [VPC Access Connector](https://cloud.google.com/vpc/docs/configure-serverless-vpc-access)
 - [Secret Manager](https://cloud.google.com/secret-manager/docs)
 - [Terraform GCP Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [Infracost](https://www.infracost.io/docs/)
 
-## 🐛 Troubleshooting
+## 📝 Features Checklist
+
+- ✅ Cloud Run with auto-scaling and health checks
+- ✅ Private Cloud SQL (PostgreSQL) with VPC peering
+- ✅ Serverless VPC Access Connector
+- ✅ Secret Manager integration
+- ✅ Least privilege IAM (separate service accounts)
+- ✅ Artifact Registry for Docker images
+- ✅ GitHub Actions CI/CD pipeline
+- ✅ Terraform validation (fmt, validate, tflint)
+- ✅ Security scanning (Checkov, Trivy)
+- ✅ Cost estimation (Infracost)
+- ✅ Automated Docker build/push/deploy
+- ✅ Infrastructure as Code best practices
+- ✅ Automated testing and verification
+- ✅ Documentation and examples
+
+---
+
+**Built with** ❤️ **for OryonTech DevOps Technical Challenge**
 
 ### Common Issues
 
@@ -279,9 +473,19 @@ Error: googleapi: Error 403: Permission denied
 ```
 Solution: Verify service account has required IAM roles
 
-### Debug Mode
+**4. Docker push authentication fails**
+```
+Error: denied: Unauthenticated request
+```
+Solution: Regenerate service account key and update `GCP_SA_KEY` secret
 
-## How to Destroy
+**5. Infracost not showing costs**
+```
+No cost data available
+```
+Solution: Verify `INFRACOST_API_KEY` secret is set and valid
+
+## 🗑️ How to Destroy
 
 **Using the cleanup script (recommended):**
 ```bash
@@ -293,32 +497,8 @@ Solution: Verify service account has required IAM roles
 terraform destroy
 ```
 
-This will remove all resources including Cloud Run service, Cloud SQL database, VPC networking, secrets, and service accounts. The destroy operation requires confirmation before proceeding.
-
-## Repository Structure
-
-```
-.
-├── modules/gcp-baseline/     # Reusable Terraform module
-├── examples/sample-app/      # Sample Flask app with DB connectivity
-├── scripts/                  # Automation scripts (deploy, validate, verify, destroy)
-├── .github/workflows/        # CI/CD pipeline
-├── main.tf                   # Root configuration
-├── variables.tf              # Input variables
-├── outputs.tf                # Outputs
-└── terraform.tfvars.example  # Example configuration
-```
-
-## Additional Notes
-
-**Private Networking Approach:** This implementation uses Serverless VPC Access Connector. Cloud Run connects to the VPC connector, which provides access to the private VPC where Cloud SQL resides. This is the recommended approach for Cloud Run to Cloud SQL private connectivity.
-
-**Cost:** Estimated ~$15-20/month for staging environment with minimal usage.
-
-**Observability:** The sample application includes structured logging, health check endpoints (`/health` and `/health/db`), and Cloud SQL insights are enabled for query analysis.
-
-**Infracost:** CI/CD pipeline includes Infracost integration (see `.github/workflows/terraform-ci.yml`). Set `INFRACOST_API_KEY` secret to enable cost estimation on pull requests.
+**⚠️ Warning**: This will permanently delete all resources including Cloud Run, Cloud SQL database and data, VPC networking, secrets, service accounts, and Artifact Registry.
 
 ---
 
-Built for OryonTech DevOps Technical Challenge
+**Built with** ❤️ **for OryonTech DevOps Technical Challenge**
