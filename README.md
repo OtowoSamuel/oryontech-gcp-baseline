@@ -154,7 +154,7 @@ gh secret set INFRACOST_API_KEY --body "your-infracost-key"
 rm github-actions-key.json
 ```
 
-## � CI/CD Pipeline
+## CI/CD Pipeline
 
 The GitHub Actions pipeline automatically runs on Terraform file changes (`*.tf`, `*.tfvars`):
 
